@@ -1,7 +1,8 @@
 Nama : Nadin Ananda
 NPM : 2406351806
 Kelas : PBP E
-Tautan menuju aplikasi : 
+Tautan menuju aplikasi :
+Jurusan : Sistem Informasi 
 
 1. Jelaskan bagaimana cara kamu mengimplementasikan checklist di atas secara step-by-step (bukan hanya sekadar mengikuti tutorial).
 
