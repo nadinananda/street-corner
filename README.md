@@ -23,9 +23,10 @@ Kaitan antara urls.py, views.py, models.py, dan berkas html adalah sebagai berik
 - urls.py (URL Configuration)
 urls.py akan mendefinisikan pola URL dan memetakan setiap URL ke fungsi view tertentu di views.py. 
 - views.py (Controller)
-> views.py dengan models.py
+views.py dengan models.py
 views.py akan mengimpor dan menggunakan class-class model dari models.py untuk melakukan operasi CRUD (Create, Read, Update, Delete) pada database.
-> views.py dengan index.html
+
+views.py dengan index.html
 views.py merender template HTML dan mengirimkan data (context) ke template tersebut.
 
 - models.py (Model)
