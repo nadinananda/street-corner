@@ -5,11 +5,13 @@
 <center>
     <h5>Name: </h5>
 </center>
+
 <p align="center">{{ name }}</p>
 
 <center>
     <h5>NPM: </h5>
 </center>
+
 <p align="center">{{ npm }}</p>
 
 <center>
@@ -58,6 +60,7 @@
     <p>{{ product.description|truncatewords:25 }}...</p>
 
     <p><a href="{% url 'main:show_product' product.id %}"><button>Detail</button></a></p>
+
 </div>
 
 <hr>
