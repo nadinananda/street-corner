@@ -37,7 +37,6 @@ CSRF_TRUSTED_ORIGINS = [
     "https://nadin-ananda-streetcorner.pbp.cs.ui.ac.id"
 ]
 
-
 # Application definition
 
 INSTALLED_APPS = [
