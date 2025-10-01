@@ -228,7 +228,6 @@ Penggunaan cookies tidak sepenuhnya aman secara default karena kelemahan cookies
     3. Menambah potongan kode last_login pada fungsi show_main
     4. Mengubah fungsi logout_user untuk menghapus cookie last_login setelah melakukan logout.
     5. Menambahkan sesi terakhir pada main.html
-
 ### Menghubungkan model Product dengan User
     1. Menambahkan model baru yaitu user di models.py 
     2. Mengubah kode add_product di views.py
@@ -241,3 +240,113 @@ Penggunaan cookies tidak sepenuhnya aman secara default karena kelemahan cookies
 2. SuperTokens. (2024). A comprehensive guide to Django’s user authentication system. Supertokens.com; SuperTokens. https://supertokens.com/blog/django-user-authentication 
 
 3. MDN. (2025, April 28). Django Tutorial Part 8: User authentication and permissions - Learn web development | MDN. MDN Web Docs. https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Server-side/Django/Authentication 
+
+<p align="center">
+  TUGAS 5
+</p>
+
+## 1. Jika terdapat beberapa CSS selector untuk suatu elemen HTML, jelaskan urutan prioritas pengambilan CSS selector tersebut!
+Urutan dari prioritas tertinggi hingga tidak ada prioritas dalam pengambilan CSS selector adalah: 
+- Origin & Importance, melihat sumber deklarasi yang ditentukan oleh !important
+- Spesifisitas CSS: 
+1. Inline styles, contoh: <h1 style="color: pink;"> 
+2. ID Selector, contoh: #navbar
+3. Classes, attribute selectors and pseudo-classes, contoh: .test, [type="text"], :hover
+4. Elements and pseudo-elements, contoh: h1, ::before, ::after
+5. Universal selector and :where(), contoh: *, where()
+- Source Order, apabila spesifisitas sama, maka aturan yang muncul belakangan akan menimpa bagian awal
+- Initial & Inherited Properties (default values), elemen memakai initial atau inherit dari parent sesuai dengan sifat propertiesnya.
+
+Sumber: https://www.w3schools.com/css/css_specificity.asp, PPT PBP "06-Web Design Using HTML5 and CSS3"
+
+## 2. Mengapa responsive design menjadi konsep yang penting dalam pengembangan aplikasi web? Berikan contoh aplikasi yang sudah dan belum menerapkan responsive design, serta jelaskan mengapa!
+Responsive layout merupakan suatu pendekatan untuk membuat halaman web dengan tata letak yang fleksibel, gambar yang fleksibel dan kueri media pada style sheet. Keuntungan dari responsive design adalah informasi yang disajikan dapat diterima pengguna dengan baik. Informasi yang bisa diakses pada desktop harus ditampilkan juga pada mobile begitupun sebaliknya sehingga pengguna tidak ada yang kehilangan informasi dan terlepas akses dari perangkat mobile apapun. 
+
+Contoh aplikasi yang sudah menerapkan responsive design adalah Google Chrome. Menurut saya,Google Chrome telah menyajikan layar dan layout tampilan sesuai dengan device pengguna masing-masing. Hal tersebut membuat pengalaman pengguna tetap nyaman untuk mengakses browser baik itu dari tablet, desktop, maupun handphone. 
+
+Sedangkan, berdasarkan pengalaman pribadi saya contoh aplikasi yang belum menerapkan responsive design adalah Microsoft Office seperti Word, PowerPoint, dan Excel. Menurut saya, ketiga aplikasi ini dari awal dikenal dengan fungsinya khusus untuk desktop. Walaupun, saat ini aplikasi tersebut sudah tersedia di PlayStore maupun AppStore, tetapi pengalaman pengguna yang disajikan saat berada di desktop dan di mobile itu sangat berbeda. Selain itu, contoh lainnya adalah software Figma. Menurut saya, tata letak figma jauh lebih baik diakses di desktop dibandingkan melihat design pada mobile yang sangat kecil. 
+
+## 3. Jelaskan perbedaan antara margin, border, dan padding, serta cara untuk mengimplementasikan ketiga hal tersebut!
+Margin, border, dan padding tergambar melalui Box Model pada CSS. Perbedaan antara margin, border, dan padding adalah sebagai berikut: 
+- Content: isi elemen yang berisi teks atau gambar 
+- Margin: ruang yang berada di luar border dimana margin akan memisahkan elemen dari elemen lain (transparan)
+- Border: garis tepi yang akan membungkus padding + content
+- Padding: ruang di dalam border yang mengelilingi content (transparan)
+Cara implementasi untuk margin, border, dan padding adalah sebagai berikut: 
+<!-- div {
+  width: 300px;
+  border: 15px solid green;
+  padding: 50px;
+  margin: 20px;
+} -->
+width = lebar konten (tidak harus menghitung padding dan border karena default box-sizing: content-box)
+border = ada garis/stroke setebal 15px berwarna hijau yang akan mengelilingi content
+padding = ada jarak antar konten dan garis border sebanyak 50px 
+margin = ada ruang luar 20px yang mengeliingi content 
+
+## 4. Jelaskan konsep flex box dan grid layout beserta kegunaannya!
+Flex box merupakan layout mode yang berada di CSS3. Sistem layout satu dimensi ini dirancang untuk mengatur elemen-elemen dalam satu baris atau kolom. Kegunaan dari flex box sendiri adalah membuat deisgn lebih responsive karena keunggulannya terletak dari segi fleksibilitas. Flex box mampu mengubah ukuran elemen sesuai dengan ruang yang tersedia. Contoh penggunaan flex box adalah menu navigasi atau isi formulir. 
+
+Sedangkan, grid layout atau CSS Grid merupakan layout dua dimensi yang memungkinkan pengguna mengatur elemen baik secara horizontal maupun vertikal dalam sebuah kontainer. Kegunaan CSS Grid adalah membuat grid kompleks jadi lebih fleksibel dan mudah diatur sesuai kebutuhan design. CSS Grid akan berguna untuk membuat design halaman yang lebih terstruktur dan terorganisir. Contoh penggunaannya adalah halaman katalog, galeri, dashboard dll. 
+
+## 5. Jelaskan bagaimana cara kamu mengimplementasikan checklist di atas secara step-by-step (bukan hanya sekadar mengikuti tutorial)!
+Implementasi fungsi untuk menghapus dan edit product
+- Membuat fungsi edit_product dan delete_product di file views.py 
+- Routing url patterns di urls.py untuk fungsi edit_product dan delete_product 
+
+Menambah middleware WhiteNoise pada settings.py
+Konfigurasi variabel STATIC_ROOT, STATICFILES_DIRS, dan STATIC_URL
+
+Membuat folder static dimana isinya adalah folder css yang berisi file global.css dan folder image untuk menyimpan gambar seperti no product dan logo
+
+Kustomisasi navbar 
+- Import {% load static %} untuk mengakses dan menambahkan image yang berada di folder static/image
+- Menambahkan image logo di sebelah kiri judul aplikasi 
+``` <img src="{% static 'image/logo.png' %}" class="h-10 w-10 object-contain" /> ```
+- Mengubah tampilan logout menjadi stroke button di desktop dan mobile
+- Menambah logo di sebelah Home and Add Product, icon di-import melalui sumber berikut dengan format <svg> https://lucide.dev/icons/circle-plus 
+```<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-plus-icon lucide-circle-plus"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>```
+
+Kustomisasi main.html
+- Fokus di grid product 
+```<div class="grid grid-cols-1 md:grid-cols-2 gap-6">```
+- Menampilkan no-product image ketika belum ada product yang tersimpan
+
+Kustomisasi card_product.html
+Sumber pembuatan card : https://www.material-tailwind.com/docs/html/card#blog-card
+- Menambah gradient pada thumbnail image
+```<div class="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>```
+- Custom category badge dibawah image 
+- Menampilkan nama produk, price, dan description product
+- Menambah footer card seperti author product, button read more, edit, dan delete
+
+Kustomisasi warna pada file html create_product, edit_product, login, dan register
+```<button type="submit" class="order-1 sm:order-2 flex-1 text-white px-6 py-3 rounded-md font-medium transition-colors" style="background-color: #8BC34A;">```
+
+Kustomisasi product_detail.html
+- Custom button edit dan delete 
+{% raw %}
+{% if user.is_authenticated and product.user == user %}
+    <div class="px-6 sm:px-8 py-8">
+        <div class="flex items-center gap-3">
+            <a href="{% url 'main:edit_product' product.id %}" class="inline-flex items-center px-4 py-2 text-white rounded-md font-medium transition-colors" style="background-color: #8BC34A;">
+                Edit Product
+            </a>
+            <a href="{% url 'main:delete_product' product.id %}" class="inline-flex items-center px-4 py-1.5 border-2 rounded-md font-medium transition-colors" style="border-color: #FFC107; color: #FFC107;">
+                Delete Product
+            </a>
+        </div>
+    </div>
+{% endif %}
+{% endraw %}
+
+## Referensi 
+1. https://stackoverflow.com/questions/25105736/what-is-the-order-of-precedence-for-css 
+2. https://www.w3schools.com/css/css_specificity.asp
+3. https://www.w3schools.com/css/css_boxmodel.asp
+4. https://dibimbing.id/blog/detail/memahami-penggunaan-css-grid-dan-flexbox
+5. https://www.dicoding.com/blog/dasar-tampilan-responsif-pada-website/ 
+
+
+
+

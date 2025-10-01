@@ -1,0 +1,107 @@
+{% load static %}
+ <!--  Main-->
+<nav class="fixed top-0 left-0 w-full bg-white border-b border-gray-200 shadow-sm z-50">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center">
+          <a href="/" class="flex items-center gap-3">
+            <img src="{% static 'image/logo.png' %}" class="h-10 w-10 object-contain" />
+          <h1 class="text-xl font-semibold text-gray-900">
+            <span style="color: #9ACD32;">Street</span> Corner
+          </h1>
+          </a>
+        </div>
+
+        <!-- Desktop Navigation -->
+        <div class="hidden md:flex items-center space-x-8">
+          <a href="/" class="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-house-icon lucide-house"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            <span>Home</span>
+          </a>
+          <a href="{% url 'main:create_product' %}" class="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-plus-icon lucide-circle-plus"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+            <span>Add Product</span>
+          </a>
+        </div>
+        
+        <!-- Desktop User Section -->
+        <div class="hidden md:flex items-center space-x-6">
+          {% if user.is_authenticated %}
+            <div class="text-right">
+              <div class="text-sm font-medium text-gray-900">{{ name|default:user.username }}</div>
+              <div class="text-xs text-gray-500">{{ npm|default:"Student" }} - {{ class|default:"Class" }}</div>
+            </div>
+            <a href="{% url 'main:logout' %}" class="border-2 hover:bg-green-50 text-gray-900 px-4 py-2 rounded font-medium transition-colors" style="border-color: #9ACD32; color: #9ACD32;">
+              Logout
+            </a>
+          {% else %}
+            <a href="{% url 'main:login' %}" class="text-gray-600 hover:text-gray-900 font-medium transition-colors">
+              Login
+            </a>
+            <a href="{% url 'main:register' %}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-medium transition-colors">
+              Register
+            </a>
+          {% endif %}
+        </div>
+        
+        <!-- Mobile Menu Button -->
+        <div class="md:hidden flex items-center">
+          <button class="mobile-menu-button p-2 text-gray-600 hover:text-gray-900 transition-colors">
+            <span class="sr-only">Open menu</span>
+            <div class="w-6 h-6 flex flex-col justify-center items-center">
+              <span class="bg-current block transition-all duration-300 ease-out h-0.5 w-6 rounded-sm"></span>
+              <span class="bg-current block transition-all duration-300 ease-out h-0.5 w-6 rounded-sm my-0.5"></span>
+              <span class="bg-current block transition-all duration-300 ease-out h-0.5 w-6 rounded-sm"></span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu hidden md:hidden bg-white border-t border-gray-200">
+      <div class="px-6 py-4 space-y-4">
+        <!-- Mobile Navigation Links -->
+        <div class="space-y-1">
+          <a href="/" class="flex flex-row items-center gap-2 text-gray-600 hover:text-gray-900 font-medium py-3 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-house-icon lucide-house"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            <span>Home</span>
+          </a>
+          <a href="{% url 'main:create_product' %}" class="flex flex-row items-center gap-2 text-gray-600 hover:text-gray-900 font-medium py-3 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-plus-icon lucide-circle-plus"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+            <span>Add Product</span>
+          </a>
+        </div>
+        
+        <!-- Mobile User Section -->
+        <div class="border-t border-gray-200 pt-4">
+          {% if user.is_authenticated %}
+            <div class="mb-4">
+              <div class="font-medium text-gray-900">{{ name|default:user.username }}</div>
+              <div class="text-sm text-gray-500">{{ npm|default:"Student" }} - {{ class|default:"Class" }}</div>
+            </div>
+            <a href="{% url 'main:logout' %}" class="flex items-center justify-center border-2 hover:bg-green-50 text-gray-900 px-6 py-4 rounded font-medium transition-colors" style="border-color: #9ACD32; color: #9ACD32;">
+              Logout
+            </a>
+          {% else %}
+            <div class="space-y-3">
+              <a href="{% url 'main:login' %}" class="block text-gray-600 hover:text-gray-900 font-medium py-3 transition-colors">
+                Login
+              </a>
+              <a href="{% url 'main:register' %}" class="block bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded text-center transition-colors">
+                Register
+              </a>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <script>
+      const btn = document.querySelector("button.mobile-menu-button");
+      const menu = document.querySelector(".mobile-menu");
+    
+      btn.addEventListener("click", () => {
+        menu.classList.toggle("hidden");
+      });
+    </script>
+  </nav>

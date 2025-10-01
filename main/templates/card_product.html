@@ -1,0 +1,82 @@
+{% load static %}
+  <article class="relative flex flex-col bg-white shadow-sm border border-slate-200 rounded-lg hover:shadow-lg transition-shadow duration-300 overflow-hidden h-full min-h-[500px]">
+    
+    <a href="{% url 'main:show_product' product.id %}" class="block h-full">
+    <!-- Thumbnail Image with Gradient -->
+    <div class="relative h-56 m-2.5 overflow-hidden rounded-md">
+      {% if product.thumbnail %}
+        <img src="{{ product.thumbnail }}" alt="{{ product.title }}" class="w-full h-full object-cover">
+      {% else %}
+        <div class="w-full h-full bg-gray-200"></div>
+      {% endif %}
+      <div class="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
+    </div>
+    </a>
+
+    <!-- Content -->
+    <div class="p-4">
+    {% comment %} Category Badge {% endcomment %}
+    <div class="mb-4 flex items-center gap-2">
+      <span class="rounded-full py-0.5 px-2.5 border border-transparent text-xs text-white transition-all shadow-sm text-center" style="background-color: #8BC34A;">
+        {{ product.get_category_display }}
+      </span>
+      {% if product.is_featured %}
+        <span class="rounded-full py-0.5 px-2.5 text-xs font-medium text-white" style="background-color: #FFC107; color: #855000">
+          Featured
+        </span>
+      {% endif %}
+    </div>
+
+    <a href="{% url 'main:show_product' product.id %}">
+      {% comment %} Nama produk {% endcomment %}
+      <h3 class="text-lg font-semibold text-gray-900 mb-3 line-clamp-2 leading-tight hover:text-green-600 transition-colors">
+        {{ product.name }}
+      </h3>
+
+      {% comment %} Price {% endcomment %}
+      <div class="mb-3">
+          <span class="text-2xl font-bold" style="color: #8BC34A;">Rp {{ product.price|floatformat:0 }}</span>
+      </div>
+    </a>
+
+      {% comment %} Description {% endcomment %}
+      <p class="text-gray-600 text-sm leading-relaxed line-clamp-3 mb-4">
+        {{ product.description|truncatewords:20|default:"No description" }}
+      </p>
+    </div>
+
+      <!-- Footer Card -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 mt-auto border-t border-gray-100 gap-2">
+        <div class="flex items-center min-w-0">
+          <div class="relative inline-block h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+            {{ product.user.username|slice:":1"}}
+          </div>
+          <div class="ml-3 min-w-0">
+            <span class="block text-sm font-medium text-gray-900 truncate">
+              {% if product.user %}
+                {% firstof product.user.username %}
+              {% else %}
+                Anonymous
+              {% endif %}
+            </span>
+          </div>
+        </div>
+      
+      <div class="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
+        <a href="{% url 'main:show_product' product.id %}" class="text-sm transition-colors" style="color: #8BC34A;">
+          Read more →
+        </a>
+
+        <!-- Action Buttons -->
+        {% if user.is_authenticated and product.user == user %}
+              <a href="{% url 'main:edit_product' product.id %}" class="text-gray-600 hover:text-gray-700 text-sm transition-colors">
+                Edit
+              </a>
+              <a href="{% url 'main:delete_product' product.id %}" class="text-red-600 hover:text-red-700 text-sm transition-colors">
+                Delete
+              </a>
+        {% endif %}
+      </div>
+    </div>
+  </article>
+</a>
