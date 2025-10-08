@@ -1,0 +1,331 @@
+<div id="crudModal"
+     class="hidden fixed inset-0 z-[100] w-full flex items-center justify-center bg-black/50">
+  <div id="crudModalContent"
+       class="form-style bg-white rounded-2xl shadow-lg w-11/12 sm:w-4/5 md:w-2/3 lg:w-1/2 xl:w-5/12
+              max-h-screen overflow-y-auto transform transition-all duration-300 ease-in-out
+              opacity-0 scale-95">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between p-5 border-b">
+      <div>
+        <h3 id="modalTitle" class="text-xl font-semibold text-gray-900">
+          Add New Product
+        </h3>
+        <p class="text-sm text-gray-600 mt-1">Fill in the product details below</p>
+      </div>
+
+      <button type="button"
+              class="text-gray-500 rounded-lg p-2 transition-colors hover:opacity-90"
+              onclick="hideModal()" aria-label="Close modal">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="m15 9-6 6"></path>
+          <path d="m9 9 6 6"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Form -->
+    <div class="px-6 py-4 space-y-4 form-style">
+      <form id="productForm" method="post">
+        {% csrf_token %}
+        <input type="hidden" id="productId" name="productId">
+
+        <div class="mb-4">
+          <label for="name" class="block text-sm font-medium text-gray-700">Product Name</label>
+          <input type="text" id="name" name="name" 
+                class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2" 
+                placeholder="Enter product name" required>
+        </div>
+
+        <div class="mb-4">
+          <label for="price" class="block text-sm font-medium text-gray-700">Price</label>
+          <input id="price" name="price" type="number"
+                class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2" 
+                placeholder="Enter product price" required>
+        </div>
+
+        <div class="mb-4">
+          <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+          <textarea id="description" name="description" rows="3" 
+                class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2" 
+                placeholder="Enter product description" required></textarea>
+        </div>
+
+        <div class="mb-4">
+          <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
+          <select id="category" name="category" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2" required>
+            <option value="">Choose a category</option>
+            <option value="jersey">Jersey</option>
+            <option value="sneakers">Sneakers</option>
+            <option value="shirts">Shirts</option>
+            <option value="gloves">Gloves</option>
+            <option value="shorts">Baggy Shorts</option>
+          </select>
+        </div>
+
+        <div class="mb-4">
+          <label for="thumbnail" class="block text-sm font-medium text-gray-700">Thumbnail</label>
+          <input id="thumbnail" name="thumbnail" type="url"
+                class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+        </div>
+
+        <div class="mb-2">
+          <label class="flex items-center gap-2">
+            <input id="is_featured" name="is_featured" type="checkbox"
+                   class="h-4 w-4" style="accent-color:#8BC34A">
+            <span class="text-sm text-gray-900">Is Featured</span>
+          </label>
+        </div>
+      </form>
+
+      <p id="createErrorBox" class="text-red-600 text-sm hidden"></p>
+    </div>
+
+    <div class="flex flex-col sm:flex-row gap-4 p-6 border-t border-gray-200 rounded-b">
+      <button type="button"
+              class="order-2 sm:order-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-md font-medium hover:bg-gray-50 transition-colors text-center"
+              onclick="hideModal()">Cancel</button>
+      <button type="submit" id="submitButton" form="productForm"
+              class="order-1 sm:order-2 flex-1 text-white px-6 py-3 rounded-md font-medium hover:opacity-90 transition-colors"
+              style="background:#8BC34A">
+        Save Product
+      </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function getCookie(name) {
+        const v = document.cookie.split('; ').find(r => r.startsWith(name + '='));
+        return v ? decodeURIComponent(v.split('=')[1]) : null;
+    }
+
+    const CSRFTOKEN = getCookie('csrftoken');
+
+    const CREATE_PRODUCT_URL = "{% url 'main:create_product_ajax' %}";
+    const UPDATE_PRODUCT_URL = (id) =>
+    "{% url 'main:update_product_ajax' '00000000-0000-0000-0000-000000000000' %}".replace(
+      "00000000-0000-0000-0000-000000000000", id
+    );
+    const PRODUCT_DETAIL_URL = (id) => `/json/${id}/`; 
+
+    // Tampilin modal 
+    function showModal() {
+      const modal = document.getElementById('crudModal');
+      const modalContent = document.getElementById('crudModalContent');
+
+      if (!modal || !modalContent) return;
+
+      modal.classList.remove('hidden'); 
+      setTimeout(() => {
+        modalContent.classList.remove('opacity-0', 'scale-95');
+        modalContent.classList.add('opacity-100', 'scale-100');
+      }, 50); 
+    }
+    
+    // Hide modal
+    function hideModal() {
+      const modal = document.getElementById('crudModal');
+      const modalContent = document.getElementById('crudModalContent');
+
+      if (!modal || !modalContent) return;
+
+      modalContent.classList.remove('opacity-100', 'scale-100');
+      modalContent.classList.add('opacity-0', 'scale-95');
+
+      setTimeout(() => {
+        modal.classList.add('hidden');
+      }, 300); 
+    }
+
+    window.showModal = showModal;
+    window.hideModal = hideModal;
+
+    // Method helper 
+    function resetCreateMode() {
+        document.getElementById('productId').value = '';
+        document.getElementById('productForm').reset();
+        document.getElementById('modalTitle').textContent = 'Add New Product';
+        document.getElementById('submitButton').textContent = 'Save Product';
+        const box = document.getElementById('createErrorBox');
+        box.classList.add('hidden');
+        box.textContent = ''; 
+    }
+
+    async function openEditModal(productId) {
+        const endpoint = PRODUCT_DETAIL_URL(productId);
+        try {
+            const response = await fetch(endpoint);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+
+            document.getElementById('productId').value = data.id; 
+            document.getElementById('name').value = data.name;
+            document.getElementById('price').value = data.price;
+            document.getElementById('description').value = data.description;
+            document.getElementById('category').value = data.category;
+            document.getElementById('thumbnail').value = data.thumbnail || '';
+            document.getElementById('is_featured').checked = data.is_featured;
+            document.getElementById('modalTitle').textContent = 'Edit Product';
+            document.getElementById('submitButton').textContent = 'Update Product';
+            document.getElementById('createErrorBox').classList.add('hidden');
+
+            showModal();
+
+        } catch (error) {
+            console.error('Failed to open edit modal:', error);
+            alert('An error occurred.');
+        }
+    }
+
+    // Delete modal
+    function showDeleteModal(productId) {
+        const modal = document.getElementById('deleteConfirmModal');
+        const confirmBtn = document.getElementById('confirmDeleteBtn');
+
+        if (!modal || !confirmBtn) return;
+
+        confirmBtn.dataset.productId = productId;
+        modal.classList.remove('hidden');
+        modal.querySelector('#deleteModalContent').classList.add('opacity-100', 'scale-100');
+    }
+
+    function hideDeleteModal() {
+        const modal = document.getElementById('deleteConfirmModal');
+        if (!modal) return;
+        modal.querySelector('#deleteModalContent').classList.remove('opacity-100', 'scale-100');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
+
+    // Tombol add/edit/delete
+    document.addEventListener('click', (event) => {
+        const openCreateModalButton = event.target.closest('#open-create-modal');
+        if (openCreateModalButton) {
+            event.preventDefault();
+            resetCreateMode();
+            showModal();
+            return;
+        }
+
+        const editBtn = event.target.closest('.edit-product-btn');
+        if (editBtn) {
+            event.preventDefault();
+            const productId = editBtn.dataset.productId;
+            if (productId) openEditModal(productId);
+            return;
+        }
+
+        const deleteBtn = event.target.closest('.delete-product-btn');
+        if (deleteBtn) {
+            event.preventDefault();
+            const productId = deleteBtn.dataset.productId;
+            if (productId) showDeleteModal(productId); 
+            return;
+        }
+    });
+
+    // Submit AJAX 
+    document.addEventListener('DOMContentLoaded', () => {
+    const form      = document.getElementById('productForm');
+    const errorBox  = document.getElementById('createErrorBox');
+    const submitBtn = document.getElementById('submitButton');
+    
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorBox.classList.add('hidden');
+      errorBox.textContent = '';
+
+      const productId = document.getElementById('productId').value.trim();
+      const url = productId ? UPDATE_PRODUCT_URL(productId) : CREATE_PRODUCT_URL;
+
+      submitBtn.disabled = true;
+      const oldLabel = submitBtn.textContent;
+      submitBtn.textContent = productId ? 'Updating...' : 'Saving...';
+
+      try {
+        const formData = new FormData(form);
+        const res = await fetch(url, {
+          method: 'POST',
+          body: formData,
+          headers: { 'X-CSRFToken': CSRFTOKEN },
+          credentials: 'same-origin',
+        });
+        const data = await res.json();
+
+        if (!res.ok || data.status !== 'success') {
+          const msg = data?.errors
+            ? Object.entries(data.errors)
+                .map(([f, m]) => `${f}: ${Array.isArray(m) ? m.join(', ') : m}`)
+                .join(' | ')
+            : (data?.message || 'Failed to save product.');
+          errorBox.textContent = msg;
+          errorBox.classList.remove('hidden');
+          return;
+        }
+
+        form.reset();
+        hideModal();
+        if (typeof fetchAndRenderProducts === 'function') {
+          const isAll = document.getElementById('tab-all')?.style.backgroundColor === '#8BC34A';
+          fetchAndRenderProducts(isAll ? 'all' : 'my');
+        } else if (typeof refreshProductList === 'function') {
+          refreshProductList();
+        }
+      } catch (err) {
+        console.error(err);
+        errorBox.textContent = 'Network error. Please try again.';
+        errorBox.classList.remove('hidden');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = oldLabel;
+      }
+    });
+
+    // Delete modal buttons
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    const cancelDeleteBtn  = document.getElementById('cancelDeleteBtn');
+    cancelDeleteBtn?.addEventListener('click', hideDeleteModal);
+
+    confirmDeleteBtn?.addEventListener('click', async function () {
+      const button    = this;
+      const productId = button.dataset.productId;
+      if (!productId) return;
+
+      const oldLabel = button.textContent;
+      button.disabled = true;
+      button.textContent = 'Deleting...';
+
+      try {
+        const endpoint = `/delete-product-ajax/${productId}/`; 
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': CSRFTOKEN },
+          credentials: 'same-origin',
+        });
+        const data = await response.json();
+
+        if (response.ok && data.status === 'success') {
+          document.getElementById(`product-card-${productId}`)?.remove();
+          hideDeleteModal();
+          if (typeof refreshProductList === 'function') {
+            const isAll = document.getElementById('tab-all')?.style.backgroundColor === '#8BC34A';
+            fetchAndRenderProducts(isAll ? 'all' : 'my');
+          }
+        } else {
+          alert(`Error: ${data.message || 'Could not delete product.'}`);
+        }
+      } catch (error) {
+        console.error('Delete error:', error);
+        alert('Network error.');
+      } finally {
+        button.disabled = false;
+        button.textContent = oldLabel;
+      }
+    });
+  });
+</script>
+

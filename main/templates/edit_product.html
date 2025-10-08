@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block meta %}
-<title>Edit News - Football News</title>
+<title>Edit Product - Street Corner</title>
 {% endblock meta %}
 
 {% block content %}
@@ -17,13 +17,15 @@
     </div>
     
     <!-- Form -->
-    <div class="bg-white rounded-lg border border-gray-200 p-6 sm:p-8 form-style">
+    <div class="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8">
       <div class="mb-8">
-        <h1 class="text-2xl font-bold text-gray-900 mb-2">Edit </h1>
+        <h1 id="product-name-title" class="text-2xl font-bold text-gray-900 mb-2">Edit</h1>
         <p class="text-gray-600">Update your product</p>
       </div>
-      
-      <form method="POST" class="space-y-6">
+
+      <div id="form-errors" class="hidden bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert"></div>
+    
+      <form id="edit-product-form" class="space-y-6">
         {% csrf_token %}
         {% for field in form %}
           <div>
@@ -36,9 +38,7 @@
             {% if field.help_text %}
               <p class="mt-1 text-sm text-gray-500">{{ field.help_text }}</p>
             {% endif %}
-            {% for error in field.errors %}
-              <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-            {% endfor %}
+            <div id="error-{{ field.name }}" class="mt-1 text-sm text-red-600"></div>
           </div>
         {% endfor %}
         
@@ -46,7 +46,7 @@
           <a href="{% url 'main:show_main' %}" class="order-2 sm:order-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-md font-medium hover:bg-gray-50 transition-colors text-center">
             Cancel
           </a>
-          <button type="submit" class="order-1 sm:order-2 flex-1 text-white px-6 py-3 rounded-md font-medium transition-colors" style="background-color: #8BC34A;">
+          <button id="submit-button" type="submit" class="order-1 sm:order-2 flex-1 text-white px-6 py-3 rounded-md font-medium transition-colors" style="background-color: #8BC34A;">
             Update Product
           </button>
         </div>
@@ -54,4 +54,127 @@
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form            = document.getElementById('edit-product-form');
+  const submitButton    = document.getElementById('submit-button');
+  const formErrorsDiv   = document.getElementById('form-errors');
+  const productNameTitle= document.getElementById('product-name-title');
+
+  form.querySelectorAll('input, textarea, select').forEach(el => {
+    if (el.type !== 'checkbox' && el.type !== 'radio') {
+      el.classList.add('w-full','rounded-md','border','border-gray-300','px-3','py-2','focus:outline-none','focus:ring-2');
+    }
+  });
+
+  function getCookie(name) {
+    const v = document.cookie.split('; ').find(r => r.startsWith(name + '='));
+    return v ? decodeURIComponent(v.split('=')[1]) : null;
+  }
+  const CSRFTOKEN = getCookie('csrftoken');
+
+  const uuidMatch   = window.location.pathname.match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}/);
+  const pathSegments= window.location.pathname.split('/').filter(Boolean);
+  const PRODUCT_ID  = (uuidMatch && uuidMatch[0]) || pathSegments[pathSegments.length - 1];
+
+  const GET_DATA_ENDPOINT    = `{% url 'main:show_json_by_id' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', PRODUCT_ID);
+  const UPDATE_DATA_ENDPOINT = `{% url 'main:update_product_ajax' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', PRODUCT_ID);
+
+  async function populateForm() {
+    try {
+      const res = await fetch(GET_DATA_ENDPOINT, { credentials: 'same-origin' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      let data = await res.json();
+
+      if (Array.isArray(data)) data = data[0] || {};
+
+      const nameInput = form.querySelector('[name="name"]');              if (nameInput) nameInput.value = data.name ?? '';
+      const priceInput= form.querySelector('[name="price"]');             if (priceInput) priceInput.value = data.price ?? '';
+      const descInput = form.querySelector('[name="description"]');       if (descInput)  descInput.value = data.description ?? '';
+      const catSelect = form.querySelector('[name="category"]');          if (catSelect)  catSelect.value = data.category ?? '';
+      const thumbInput= form.querySelector('[name="thumbnail"]');         if (thumbInput) thumbInput.value = data.thumbnail || '';
+      const featuredCb= form.querySelector('[name="is_featured"]');       if (featuredCb) featuredCb.checked = !!data.is_featured;
+
+      if (productNameTitle) productNameTitle.textContent = `Edit "${data.name || ''}"`;
+    } catch (err) {
+      console.error('Failed to load product data:', err);
+      formErrorsDiv.textContent = 'Failed to load product data. Please try again.';
+      formErrorsDiv.classList.remove('hidden');
+
+      if (typeof showToast === 'function') {
+        showToast('Failed', 'Could not load product data.', 'error', 3000);
+      }
+    }
+  }
+
+  form.addEventListener('submit', async function (event) {
+    event.preventDefault();
+
+    formErrorsDiv.classList.add('hidden');
+    formErrorsDiv.innerHTML = '';
+    form.querySelectorAll('[id^="error-"]').forEach(el => el.textContent = '');
+
+    submitButton.disabled = true;
+    const oldLabel = submitButton.textContent;
+    submitButton.textContent = 'Updating...';
+
+    const formData = new FormData(form);
+
+    try {
+      const res  = await fetch(UPDATE_DATA_ENDPOINT, {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-CSRFToken': CSRFTOKEN },
+        credentials: 'same-origin',
+      });
+      const data = await res.json();
+
+      if (res.ok && data.status === 'success') {
+        try {
+          sessionStorage.setItem('toast', JSON.stringify({
+            t: 'Success', m: 'Product has been updated.', ty: 'success', d: 2500
+          }));
+        } catch (_) {}
+          window.location.href = "{% url 'main:show_main' %}";
+      } else {
+        if (data.errors) {
+          let nonField = [];
+          for (const field in data.errors) {
+            const messages = Array.isArray(data.errors[field]) ? data.errors[field] : [data.errors[field]];
+            if (field === '__all__') {
+              nonField = nonField.concat(messages);
+            } else {
+              const errorDiv = document.getElementById(`error-${field}`);
+              if (errorDiv) errorDiv.textContent = messages[0];
+            }
+          }
+          if (nonField.length) {
+            formErrorsDiv.innerHTML = nonField.map(m => `<p>${m}</p>`).join('');
+            formErrorsDiv.classList.remove('hidden');
+          }
+          if (typeof showToast === 'function') {
+            showToast('Update failed', 'Isi field yang kosong', 'error', 3000);
+          }
+        } else {
+          formErrorsDiv.textContent = data.message || 'Failed to update product.';
+          formErrorsDiv.classList.remove('hidden');
+        }
+      }
+    } catch (err) {
+      console.error('Submission error:', err);
+      formErrorsDiv.textContent = 'An unexpected network error occurred.';
+      formErrorsDiv.classList.remove('hidden');
+      if (typeof showToast === 'function') {
+        showToast('Network error', 'Try again', 'error', 3000);
+      }
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = oldLabel;
+    }
+  });
+
+  populateForm();
+});
+</script>
 {% endblock %}

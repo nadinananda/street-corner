@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block meta %}
-<title>{{ product.title }} - Street Corner</title>
+<title>Street Corner</title>
 {% endblock meta %}
 
 {% block content %}
@@ -16,81 +16,169 @@
             </a>
         </div>
         
-        <!-- Product -->
-        <article class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            
-            <!-- Header -->
+        <!-- Loading -->
+        <div id="loading-state" class="text-center p-12 bg-white rounded-lg border">
+            <p>Loading product...</p>
+        </div>
+
+        <!-- Error -->
+        <div id="error-state" class="text-center p-12 bg-white rounded-lg border hidden">
+            <h3 class="text-lg font-medium text-red-600">Failed to load product</h3>
+            <p class="text-gray-500">The product may not exist. Please try again later.</p>
+        </div>
+
+        <!-- Content -->
+        <article id="product-content" class="bg-white rounded-2xl border border-gray-200 overflow-hidden hidden">
             <div class="p-6 sm:p-8">
-                <div class="mb-4 flex items-center gap-2">
-                    <span class="rounded-full py-0.5 px-2.5 border border-transparent text-xs text-white transition-all shadow-sm text-center" style="background-color: #8BC34A;">
-                        {{ product.get_category_display }}
-                    </span>
-                {% if product.is_featured %}
-                    <span class="rounded-full py-0.5 px-2.5 text-xs font-medium text-white" style="background-color: #FFC107; color: #855000;">
-                        Featured
-                    </span>
-                {% endif %}
-                </div>
-                
-                <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight mb-4">
-                    {{ product.title }}
-                </h1>
-                
-                <div class="flex flex-wrap items-center text-sm text-gray-500 gap-4">
-                    <time datetime="{{ product.created_at|date:'c' }}">
-                        {{ product.created_at|date:"M j, Y g:i A" }}
-                    </time>
+                <div id="badges-container" class="mb-4 flex items-center gap-2"></div>
+                <h1 id="product-name" class="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight mb-4"></h1>
+                <div id="product-price" class="text-2xl font-extrabold mb-4" style="color:#8BC34A;"></div>
+            </div>
+
+            <div id="product-image-container" class="px-6 sm:px-8 hidden">
+                <div class="w-full bg-gray-100 rounded-lg overflow-hidden" style="aspect-ratio:16/9;">
+                    <img id="product-image" src="" alt="" class="w-full h-full object-contain">
                 </div>
             </div>
 
-            <!-- Thumbnail -->
-            {% if product.thumbnail %}
-                <div class="px-6 sm:px-8">
-                    <img src="{{ product.thumbnail }}" 
-                         alt="{{ product.title }}" 
-                         class="w-full h-64 sm:h-80 lg:h-96 object-cover rounded-lg">
-                </div>
-            {% endif %}
-
-            <!-- Content -->
             <div class="p-6 sm:p-8">
                 <div class="prose prose-lg max-w-none">
-                    <div class="text-gray-700 leading-relaxed whitespace-pre-line text-base sm:text-lg">
-                        {{ product.description }}
-                    </div>
+                    <div id="product-description" class="text-gray-700 leading-relaxed whitespace-pre-line text-base sm:text-lg"></div>
                 </div>
             </div>
 
-            <!-- Button edit dan delete -->
-            {% if user.is_authenticated and product.user == user %}
-                <div class="px-6 sm:px-8 py-8">
-                    <div class="flex items-center gap-3">
-                        <a href="{% url 'main:edit_product' product.id %}" class="inline-flex items-center px-4 py-2 text-white rounded-md font-medium transition-colors" style="background-color: #8BC34A;">
-                            Edit Product
-                        </a>
-                        <a href="{% url 'main:delete_product' product.id %}" class="inline-flex items-center px-4 py-1.5 border-2 rounded-md font-medium transition-colors" style="border-color: #FFC107; color: #FFC107;">
-                            Delete Product
-                        </a>
-                    </div>
-                </div>
-            {% endif %}
+            <div id="action-buttons" class="px-6 sm:px-8 py-8"></div>
 
-            <!-- Author Info -->
             <div class="border-t border-gray-200 p-6 sm:p-8 bg-gray-50">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="font-medium text-gray-900">
-                            {% if product.user %}
-                                <p>Author: {{ product.user.username }}</p>
-                            {% else %}
-                                <p>Author: Anonymous</p>
-                            {% endif %}
-                        </div>
-                        <p class="text-sm text-gray-500">Author</p>
-                    </div>
-                </div>
+                <p class="text-sm text-gray-700">Added by: <span id="product-author" class="font-medium"></span></p>
             </div>
         </article>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const CURRENT_USER_ID = "{{ user.id|default_if_none:'' }}";
+
+  const pathSegments = window.location.pathname.split('/');
+  const PRODUCT_ID   = pathSegments[pathSegments.length - 2];
+
+  const API_ENDPOINT = `{% url 'main:show_json_by_id' '00000000-0000-0000-0000-000000000000' %}`
+                        .replace('00000000-0000-0000-0000-000000000000', PRODUCT_ID);
+
+  const EDIT_URL_TEMPLATE = "{% url 'main:edit_product' '00000000-0000-0000-0000-000000000000' %}";
+  const editUrl = (id) => EDIT_URL_TEMPLATE.replace('00000000-0000-0000-0000-000000000000', id);
+
+  const loadingState      = document.getElementById('loading-state');
+  const errorState        = document.getElementById('error-state');
+  const productContent    = document.getElementById('product-content');
+  const badgesContainer   = document.getElementById('badges-container');
+  const productName       = document.getElementById('product-name');
+  const productPrice      = document.getElementById('product-price');
+  const productImageContainer = document.getElementById('product-image-container');
+  const productImage      = document.getElementById('product-image');
+  const productDescription= document.getElementById('product-description');
+  const actionButtons     = document.getElementById('action-buttons');
+  const productAuthor     = document.getElementById('product-author');
+
+  function showState(state){
+    loadingState.classList.toggle('hidden', state!=='loading');
+    errorState.classList.toggle('hidden',   state!=='error');
+    productContent.classList.toggle('hidden', state!=='content');
+  }
+
+  function renderProduct(data){
+    document.title = `${data.name} - Street Corner`;
+    productName.textContent  = data.name;
+    productPrice.textContent = `Rp ${new Intl.NumberFormat('id-ID').format(data.price)}`;
+    productDescription.textContent = data.description;
+    productAuthor.textContent = data.user_username || 'Anonymous';
+
+    if (data.thumbnail){
+      productImage.src = data.thumbnail; productImage.alt = data.name;
+      productImageContainer.classList.remove('hidden');
+    }
+
+    badgesContainer.innerHTML =
+      `<span class="rounded-full py-0.5 px-2.5 text-xs font-medium text-white" style="background:#8BC34A">${data.category}</span>` +
+      (data.is_featured ? `<span class="rounded-full py-0.5 px-2.5 text-xs font-medium" style="background:#FFE082;color:#855000">Featured</span>` : '');
+
+    if (CURRENT_USER_ID && Number(CURRENT_USER_ID) === Number(data.user_id)){
+      actionButtons.innerHTML = `
+        <div class="flex items-center gap-3">
+          <a href="${editUrl(data.id)}"
+             class="inline-flex items-center px-4 py-2 text-white rounded-md hover:opacity-90 transition-colors"
+             style="background:#8BC34A">Edit Product</a>
+          <button class="delete-product-btn inline-flex items-center px-4 py-1.5 border-2 rounded-md font-medium transition-colors"
+                  style="border-color:#EF4444;color:#EF4444" data-product-id="${data.id}">
+            Delete Product
+          </button>
+        </div>`;
+    } else {
+      actionButtons.innerHTML = '';
+    }
+  }
+
+  function getCookie(name){
+    const v = document.cookie.split('; ').find(r=>r.startsWith(name+'='));
+    return v ? decodeURIComponent(v.split('=')[1]) : null;
+  }
+  const CSRFTOKEN = getCookie('csrftoken');
+
+  document.addEventListener('click', async (event)=>{
+    const btn = event.target.closest('.delete-product-btn');
+    if (!btn) return;
+    event.preventDefault();
+
+    const id = btn.dataset.productId;
+    if (!id || !confirm('Delete this product?')) return;
+
+    try{
+      const result = await fetch(`/delete-product-ajax/${id}/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRFTOKEN },
+        credentials: 'same-origin',
+      });
+      const payload = await result.json();
+
+      if (result.ok && payload.status === 'success'){
+        try {
+          sessionStorage.setItem('toast', JSON.stringify({
+            t: 'Deleted',
+            m: 'Product has been removed.',
+            ty: 'success',
+            d: 2200
+          }));
+        } catch(_) {}
+        window.location.href = "{% url 'main:show_main' %}";
+      } else {
+        const msg = payload.message || 'Failed to delete product.';
+        if (typeof showToast === 'function') showToast('Delete failed', msg, 'error', 3000);
+        else alert(msg);
+      }
+    }catch(err){
+      console.error(err);
+      if (typeof showToast === 'function') showToast('Network error', 'Please try again.', 'error', 3000);
+      else alert('Network error.');
+    }
+  });
+
+  async function loadProductDetail(){
+    showState('loading');
+    try{
+      const result = await fetch(API_ENDPOINT, { credentials: 'same-origin' });
+      if (!result.ok) throw new Error('HTTP '+result.status);
+      const data = await result.json();
+      renderProduct(data);
+      showState('content');
+    }catch(err){
+      console.error(err);
+      showState('error');
+      if (typeof showToast === 'function') showToast('Failed to load product', 'Please try again later.', 'error', 3000);
+    }
+  }
+
+  loadProductDetail();
+});
+</script>
 {% endblock content %}

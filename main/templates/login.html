@@ -13,32 +13,10 @@
         <p class="text-gray-600">Welcome to Street Corner</p>
       </div>
 
-      <!-- Form Errors Display -->
-      {% if form.non_field_errors %}
-        <div class="mb-6">
-          {% for error in form.non_field_errors %}
-            <div class="px-4 py-3 rounded-md text-sm border bg-red-50 border-red-200 text-red-700">
-              {{ error }}
-            </div>
-          {% endfor %}
+      <div id="form-errors" class="hidden mb-6 px-4 py-3 rounded-md text-sm border bg-red-50 border-red-200 text-red-700">
         </div>
-      {% endif %}
-
-      {% if form.errors %}
-        <div class="mb-6">
-          {% for field, errors in form.errors.items %}
-            {% if field != '__all__' %}
-              {% for error in errors %}
-                <div class="px-4 py-3 rounded-md text-sm border bg-red-50 border-red-200 text-red-700 mb-2">
-                  <strong>{{ field|title }}:</strong> {{ error }}
-                </div>
-              {% endfor %}
-            {% endif %}
-          {% endfor %}
-        </div>
-      {% endif %}
-
-      <form method="POST" action="" class="space-y-6">
+      
+      <form id="login-form" class="space-y-6">
         {% csrf_token %}
         
         <div>
@@ -64,33 +42,13 @@
         </div>
 
         <button
+          id="submit-button"    
           type="submit" 
           class="w-full text-white font-medium py-3 px-4 rounded-md transition-colors"
           style="background-color: #8BC34A;">
           Sign In
         </button>
       </form>
-
-      <!-- Messages Display -->
-      {% if messages %}
-        <div class="mt-6">
-          {% for message in messages %}
-            <div 
-              class="
-                px-4 py-3 rounded-md text-sm border
-                {% if message.tags == 'success' %}
-                  bg-green-50 border-green-200 text-green-700
-                {% elif message.tags == 'error' %}
-                  bg-red-50 border-red-200 text-red-700
-                {% else %}
-                  bg-gray-50 border-gray-200 text-gray-700
-                {% endif %}
-              ">
-              {{ message }}
-            </div>
-          {% endfor %}
-        </div>
-      {% endif %}
 
       <div class="mt-6 text-center pt-6 border-t border-gray-200">
         <p class="text-gray-500 text-sm">
@@ -103,4 +61,75 @@
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form          = document.getElementById('login-form');
+  const submitButton  = document.getElementById('submit-button'); // sekarang ada
+  const formErrorsDiv = document.getElementById('form-errors');
+  const csrfToken     = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+  form.addEventListener('submit', async function(event) {
+    event.preventDefault();
+
+    formErrorsDiv.classList.add('hidden');
+    formErrorsDiv.textContent = '';
+
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Signing In...';
+    }
+
+    const payload = {
+      username: form.username.value.trim(),
+      password: form.password.value
+    };
+
+    try {
+      const response = await fetch("{% url 'main:login_ajax' %}", {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.status === 'success') {
+        try {
+          sessionStorage.setItem('toast', JSON.stringify({
+            t: 'Success',
+            m: 'Logged in successfully.',
+            ty: 'success',
+            d: 2500
+          }));
+        } catch (_) {}
+        window.location.href = result.redirect_url || '/';
+      } else {
+        const msg = result.message || 'Invalid username or password.';
+        formErrorsDiv.textContent = msg;
+        formErrorsDiv.classList.remove('hidden');
+        if (typeof showToast === 'function') {
+          showToast('Login failed', msg, 'error', 3000);
+        }
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      formErrorsDiv.textContent = 'An unexpected error occurred. Please try again.';
+      formErrorsDiv.classList.remove('hidden');
+      if (typeof showToast === 'function') {
+        showToast('Network error', 'Please try again.', 'error', 3000);
+      }
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Sign In';
+      }
+    }
+  });
+});
+</script>
 {% endblock content %}

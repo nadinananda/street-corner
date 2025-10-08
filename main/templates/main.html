@@ -17,42 +17,338 @@
       <p class="text-gray-600">Stay updated with the latest product</p>
     </div>
 
-    <!-- Filter Section -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
-      <div class="flex space-x-3 mb-4 sm:mb-0">
-        <a href="?" class="{% if request.GET.filter == 'all' or not request.GET.filter  %} text-white{% else %}bg-white text-gray-700 border border-gray-300{% endif %} px-4 py-2 rounded-md font-medium transition-colors" style="{% if request.GET.filter == 'all' or not request.GET.filter %}background-color: #8BC34A;{% endif %}">
-          All Product
-        </a>
-        <a href="?filter=my" class="{% if request.GET.filter == 'my' %} text-white{% else %}bg-white text-gray-700 border border-gray-300{% endif %} px-4 py-2 rounded-md font-medium transition-colors" style="{% if request.GET.filter == 'my' %}background-color: #8BC34A;{% endif %}">
-          My Product
-        </a>
-      </div>
-      {% if user.is_authenticated %}
-        <div class="text-sm text-gray-500">
-          Last login: {{ last_login }}
+    <button id="open-create-modal" type="button"
+        class="px-5 py-3 rounded-lg font-semibold text-white"
+        style="background:#8BC34A">
+      + Add New Product
+    </button>
+
+    <!-- Modal Create Product -->
+    <div id="create-modal" class="fixed inset-0 z-50 hidden" aria-hidden="true" data-modal>
+      <div class="absolute inset-0 bg-black/40" data-close></div>
+
+      <div class="relative mx-auto mt-24 w-full max-w-xl rounded-2xl bg-white p-6 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold">Add New Product</h3>
+          <button type="button" class="rounded-md px-3 py-1 border" data-close>✕</button>
         </div>
+
+        <form id="create-form" method="post" class="space-y-4">
+          {% csrf_token %}
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+            <input name="name" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Price</label>
+            <input name="price" type="number" class="w-full border border-gray-300 rounded-md px-3 py-2" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea name="description" rows="3" class="w-full border border-gray-300 rounded-md px-3 py-2" required></textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <select name="category" class="w-full border border-gray-300 rounded-md px-3 py-2" required>
+              <option value="">Choose a category</option>
+              <option value="jersey">Jersey</option>
+              <option value="sneakers">Sneakers</option>
+              <option value="shirts">Shirts</option>
+              <option value="gloves">Gloves</option>
+              <option value="shorts">Baggy Shorts</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Thumbnail</label>
+            <input name="thumbnail" type="url" 
+                   class="w-full border border-gray-300 rounded-md px-3 py-2">
+          </div>
+          <label class="inline-flex items-center gap-2">
+            <input type="checkbox" name="is_featured" class="h-4 w-4">
+            <span class="text-sm text-gray-700">Is Featured</span>
+          </label>
+
+          <div class="flex items-center justify-end gap-3 pt-2">
+            <button type="button" class="px-4 py-2 border rounded-md" data-close>Cancel</button>
+            <button type="submit" class="px-4 py-2 rounded-md text-white" style="background:#8BC34A;">Save</button>
+          </div>
+        </form>
+
+        <p id="create-error" class="mt-3 text-sm text-red-600 hidden"></p>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex items-center gap-3 mt-8 mb-6">
+      <button id="tab-all" type="button" class="px-4 py-2 rounded-md font-semibold border"
+              style="background:#8BC34A;color:#fff;border-color:#8BC34A;">
+        All Product
+      </button>
+      <button id="tab-my" type="button" class="px-4 py-2 rounded-md font-semibold border"
+              style="background:#fff;color:#374151;border-color:#D1D5DB;">
+        My Product
+      </button>
+    </div>
+
+     <!-- Grid + states  -->
+    <div id="state-loading" class="hidden text-center p-12">Loading…</div>
+    <div id="state-error" class="hidden text-red-600">Gagal memuat produk.</div>
+    <p id="state-empty" class="hidden text-gray-500">Belum ada produk.</p>
+    <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+    <!-- Footer tools -->
+    <div class="mt-6 flex items-center gap-3">
+      <button id="refresh-btn"
+              class="bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded-md font-medium hover:bg-gray-100 transition-colors">
+        Refresh
+      </button>
+      {% if user.is_authenticated %}
+      <div class="text-sm text-gray-500">
+        Last login:
+        {% if last_login %}
+          {{ last_login|date:"d M Y, H:i" }}
+        {% else %}
+          Never
+        {% endif %}
+      </div>
       {% endif %}
     </div>
 
-    <!-- Product Grid -->
-    {% if not product_list %}
-      <div class="bg-white rounded-lg border border-gray-200 p-12 text-center">
-        <div class="w-32 h-32 mx-auto mb-4">
-          <img src="{% static 'image/no-product.png' %}" alt="No product available" class="w-full h-full object-contain">
-        </div>
-        <h3 class="text-lg font-medium text-gray-900 mb-2">Your catalog is empty</h3>
-        <p class="text-gray-500 mb-6">Add your first product to get started!</p>
-        <a href="{% url 'main:create_product' %}" class="inline-flex items-center px-4 py-2 text-white rounded-md transition-colors" style="background-color: #8BC34A;">
-          Add Product
-        </a>
-      </div>
-    {% else %}
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {% for product in product_list %}
-          {% include 'card_product.html' with product=product %}
-        {% endfor %}
-      </div>
-    {% endif %}
   </div>
 </div>
-{% endblock content%}
+
+<script>
+  const PRIMARY_GREEN = '#8BC34A';
+  const PRODUCTS_API_URL = "/json/";                             
+  const CREATE_PRODUCT_URL = "{% url 'main:create_product_ajax' %}"; 
+  const LOGGED_IN_USERNAME = "{{ request.user.username|escapejs }}";
+  const DETAIL_URL_TEMPLATE = "{% url 'main:show_product' '00000000-0000-0000-0000-000000000000' %}";
+  const EDIT_URL_TEMPLATE = "{% url 'main:edit_product' '00000000-0000-0000-0000-000000000000' %}";
+  const DELETE_URL_TEMPLATE = "{% url 'main:delete_product' '00000000-0000-0000-0000-000000000000' %}";
+  const deleteUrl = (id) => DELETE_URL_TEMPLATE.replace('00000000-0000-0000-0000-000000000000', id);
+  const editUrl = (id) => EDIT_URL_TEMPLATE.replace('00000000-0000-0000-0000-000000000000', id);
+  const productDetailUrl = (id) => DETAIL_URL_TEMPLATE.replace('00000000-0000-0000-0000-000000000000', id);
+
+  const tabAllBtn   = document.getElementById('tab-all');
+  const tabMyBtn    = document.getElementById('tab-my');
+  const gridEl      = document.getElementById('grid');
+  const loadingEl   = document.getElementById('state-loading');
+  const errorEl     = document.getElementById('state-error');
+  const emptyEl     = document.getElementById('state-empty');
+
+  const rupiah = new Intl.NumberFormat('id-ID');
+  const formatRp = (v) => 'Rp ' + rupiah.format(v || 0);
+  const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+  const esc = (t) => (t ?? '').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+  function setTabActive(which) {
+    const setActive = (btn) => {
+      btn.style.backgroundColor = PRIMARY_GREEN;
+      btn.style.color = '#fff';
+      btn.style.borderColor = PRIMARY_GREEN;
+    };
+    const setInactive = (btn) => {
+      btn.style.backgroundColor = '#fff';
+      btn.style.color = '#374151';
+      btn.style.borderColor = '#D1D5DB';
+      btn.style.borderWidth = '1px';
+      btn.style.borderStyle = 'solid';
+    };
+    setInactive(tabAllBtn); setInactive(tabMyBtn);
+    which === 'all' ? setActive(tabAllBtn) : setActive(tabMyBtn);
+  }
+
+  function showState({loading=false, error=false, empty=false, grid=false}) {
+    loadingEl.classList.toggle('hidden', !loading);
+    errorEl.classList.toggle('hidden', !error);
+    emptyEl.classList.toggle('hidden', !empty);
+    gridEl.classList.toggle('hidden', !grid);
+  }
+
+  function renderCard(p) {
+    const thumb = p.thumbnail;
+    const cat = p.category ? `
+      <span class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full"
+            style="background:${PRIMARY_GREEN};color:#fff;">
+        ${cap(p.category)}
+      </span>` : '';
+    const feat = p.is_featured ? `
+      <span class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full"
+            style="background:#FFE082;color:#855000;">
+        Featured
+      </span>` : '';
+    const author = p.user_username || 'Anonymous';
+    const authorInitial = author.slice(0,1);
+
+    return `
+    <article id="product-card-${p.id}" class="rounded-2xl border bg-white shadow-sm overflow-hidden flex flex-col">
+      <a href="${productDetailUrl(p.id)}" class="block">
+        <div class="bg-gray-100" style="aspect-ratio:16/9;">
+          <img src="${thumb}" alt="${esc(p.name)}" style="width:100%;height:100%;object-fit:cover;">
+        </div>
+      </a>
+      <div class="p-5">
+        <div class="flex gap-2 mb-3">${cat}${feat}</div>
+        <a href="${productDetailUrl(p.id)}" class="block">
+          <h3 class="text-lg font-semibold mb-1 text-gray-900 hover:underline">${esc(p.name)}</h3>
+        </a>
+        <div class="font-extrabold text-xl mb-2" style="color:${PRIMARY_GREEN};">${formatRp(p.price)}</div>
+        <p class="text-gray-600 text-sm line-clamp-2">${esc(p.description || '')}</p>
+      </div>
+      <div class="mt-auto flex items-center justify-between p-5 border-t text-sm text-gray-600">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-white font-semibold">
+            ${esc(authorInitial)}
+          </div>
+          <span class="truncate">${esc(author)}</span>
+        </div>
+        <div class="flex items-center gap-4">
+          <a href="${productDetailUrl(p.id)}" class="hover:underline" style="color:${PRIMARY_GREEN}">Read more →</a>
+          ${author === LOGGED_IN_USERNAME ? `
+          <a href="${editUrl(p.id)}" class="text-gray-700 hover:underline">Edit</a>
+          <a href="${deleteUrl(p.id)}"
+            class="hover:underline" style="color:#EF4444"
+            onclick="return confirm('Delete this product?');">
+            Delete
+          </a>
+        ` : ''}
+        </div>
+      </div>
+    </article>`;
+  }
+
+  function renderGrid(items) {
+    errorEl.classList.add('hidden');
+    gridEl.innerHTML = '';
+    if (!items || items.length === 0) {
+      emptyEl.classList.remove('hidden');
+      gridEl.classList.add('hidden');
+      return;
+    }
+    emptyEl.classList.add('hidden');
+    gridEl.classList.remove('hidden');
+    gridEl.innerHTML = items.map(renderCard).join('');
+  }
+
+  async function loadProducts(filter='all') {
+    setTabActive(filter);
+    showState({loading:true});
+    try {
+      const res = await fetch(`${PRODUCTS_API_URL}?filter=${filter}`, { credentials: 'same-origin' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      renderGrid(data);
+      showState({grid:true});
+    } catch (e) {
+      console.error(e);
+      errorEl.textContent = 'Gagal memuat produk.';
+      showState({error:true});
+
+      if (typeof showToast === 'function') {
+        showToast('Failed to load', 'Could not fetch products.', 'error', 3000);
+      }
+    }
+  }
+
+  function getCookie(name) {
+    const v = document.cookie.split('; ').find(row => row.startsWith(name + '='));
+    return v ? decodeURIComponent(v.split('=')[1]) : null;
+  }
+  const CSRFTOKEN = getCookie('csrftoken');
+
+  function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('hidden');
+  }
+
+  function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    try {
+      const cached = sessionStorage.getItem('toast');
+      if (cached && typeof showToast === 'function') {
+        const { t, m, ty, d } = JSON.parse(cached);
+        showToast(t || 'Success', m || '', ty || 'success', d || 2500);
+      }
+      sessionStorage.removeItem('toast');
+    } catch (_) {}
+    loadProducts('all');
+
+    // Tabs
+    tabAllBtn?.addEventListener('click', () => loadProducts('all'));
+    tabMyBtn?.addEventListener('click',  () => loadProducts('my'));
+
+    // Refresh
+    document.getElementById('refresh-btn')?.addEventListener('click', () => {
+      const isAllActive = tabAllBtn.style.backgroundColor === PRIMARY_GREEN;
+      loadProducts(isAllActive ? 'all' : 'my');
+    });
+
+    // Open/close create modal
+    const openCreateModalButton = document.getElementById('open-create-modal');
+    const createModal = document.getElementById('create-modal');
+    const createForm  = document.getElementById('create-form');
+    const createErr   = document.getElementById('create-error');
+
+    openCreateModalButton?.addEventListener('click', (e) => {
+      e.preventDefault();
+      openModal('create-modal');
+    });
+    createModal?.querySelectorAll('[data-close]').forEach(btn => {
+      btn.addEventListener('click', () => closeModal('create-modal'));
+    });
+
+    // Submit create
+    createForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      createErr.classList.add('hidden');
+      createErr.textContent = '';
+
+      const formData = new FormData(createForm);
+      try {
+        const res = await fetch(CREATE_PRODUCT_URL, {
+          method: 'POST',
+          body: formData,
+          headers: { 'X-CSRFToken': CSRFTOKEN },
+          credentials: 'same-origin',
+        });
+        const data = await res.json();
+        if (!res.ok || data.status !== 'success') {
+          const msg = data?.errors
+            ? Object.entries(data.errors).map(([f,m]) => `${f}: ${Array.isArray(m)?m.join(', '):m}`).join(' | ')
+            : (data?.message || 'Failed to create product.');
+          createErr.textContent = msg;
+          createErr.classList.remove('hidden');
+
+          if (typeof showToast === 'function') {
+            const msg = createErr.textContent || 'Failed to create product.';
+            showToast('Create failed', msg, 'error', 3000);
+          }
+
+          return;
+        }
+        createForm.reset();
+        closeModal('create-modal');
+
+        // Toast
+        if (typeof showToast === 'function') {
+          showToast('Created', 'Product has been published.', 'success', 2200);
+        }
+
+        const isAllActive = tabAllBtn.style.backgroundColor === PRIMARY_GREEN;
+        loadProducts(isAllActive ? 'all' : 'my');
+      } catch (err) {
+        console.error(err);
+        createErr.textContent = 'Network error. Please try again.';
+        createErr.classList.remove('hidden');
+        if (typeof showToast === 'function') {
+          showToast('Network error', 'Please try again.', 'error', 3000);
+        }
+      }
+    });
+  });
+</script>
+{% endblock content %}

@@ -347,6 +347,43 @@ Kustomisasi product_detail.html
 4. https://dibimbing.id/blog/detail/memahami-penggunaan-css-grid-dan-flexbox
 5. https://www.dicoding.com/blog/dasar-tampilan-responsif-pada-website/ 
 
+<p align="center">
+  TUGAS 6
+</p>
+
+## 1. Apa perbedaan antara synchronous request dan asynchronous request?
+Perbedaan utama antara synchronous dan asynchronous request terletak pada cara browser menangani komunikasi dengan server. Pada synchronous request, browser akan memblokir interaksi pengguna setelah sebuah aksi (event) terjadi. Pengguna harus menunggu hingga server selesai memproses dan mengirimkan kembali seluruh halaman baru sebelum bisa melanjutkan aktivitasnya. Sebaliknya, pada asynchronous request (menggunakan AJAX), permintaan dikirim di belakang layar. Pengguna dapat terus berinteraksi dengan halaman web bahkan saat server sedang memproses permintaan. Server hanya mengirim kembali sebagian data yang diperlukan untuk memperbarui bagian tertentu dari halaman sehingga tidak ada proses reload halaman secara keseluruhan. 
+
+## 2. Bagaimana AJAX bekerja di Django (alur request–response)?
+Dalam Django, alur kerja AJAX dimulai ketika pengguna website mengklik tombol atau fitur, saat itulah AJAX JavaScript dipanggil oleh browser untuk mengaktifkan XMLHttpRequest dan mengirimkan HTTP Request ke server di background. Kemudian, XMLHttpRequest dibuat sebagai proses permintaan server web kemudian memproses permintaan yang diterima. Hal tersebut disebut asynchronous process dimana data langsung di proses tanpa memperbarui keseluruhan halaman. Setelah menerima dan memproses permintaannya, server akan mengirimkan response atau data kembali ke halaman web browser. Respons tersebut akan dibaca oleh JavaScript. Kemudian, browser menerima data tersebut dan langsung ditampilkan pada halaman website tanpa reload. 
+
+## 3. Apa keuntungan menggunakan AJAX dibandingkan render biasa di Django?
+Keuntungannya adalah: 
+1. User experience yang lebih baik. 
+2. Refresh halaman lebih cepat 
+3. Beban server lebih rendah 
+4. Interaktivitas yang Ditingkatkan
+
+Sumber : https://medium.com/django-unleashed/beyond-typing-the-art-of-django-autocomplete-with-ajax-integration-0f048215e1c3
+
+AJAX mengurangi beban pada server dan meminimalkan lalu lintas jaringan. Hal ini menghasilkan waktu refresh halaman yang lebih cepat dan transisi halaman yang lebih mulus karena tidak perlu merender ulang seluruh halaman untuk setiap interaksi kecil. Hasilnya adalah pengalaman pengguna (user experience) yang terasa lebih cepat dan lebih mirip aplikasi desktop daripada situs web biasa. 
+
+## 4. Bagaimana cara memastikan keamanan saat menggunakan AJAX untuk fitur Login dan Register di Django?
+Kita dapat mengamankan fitur login dan register yang menggunakan AJAX di Django melalui implementasi CSRF (Cross-Site Request Forgery) token. 
+```{% csrf_token %}```
+Secara default, Django menyediakan perlindungan CSRF yang disertakan dalam header request AJAX. Agar memenuhi permintaan AJAX, kita perlu mengambil token CSRF dari cookie dan menyertakannya sebagai header HTTP, seperti X-CSRFToken. Selain itu, jika kita menggunakan AJAX tanpa formulir HTML, kita dapat menggunakan dekorator 
+```ensure_csrf_cookie``` 
+pada tampilan yang mengirimkan halaman untuk memastikan cookie CSRF tersedia. 
+
+## 5. Bagaimana AJAX mempengaruhi pengalaman pengguna (User Experience) pada website?
+AJAX secara signifikan meningkatkan pengalaman pengguna (User Experience) melalui interaksi, penggunaan, dan kecepatan yang lebih nyaman digunakan. Pengguna tidak perlu memperbarui halaman ketika data sedang ditampilkan. Contohnya adalah fitur likes, comment, dan retweet pada aplikasi sosial media. Hal tersebut dibuktikan melalui klik tombol like atau retweet pada twitter, halaman beranda tidak melakukan reload dan user dapat melanjutkan scrolling retweet lainnya tanpa ada pembaruan page. Oleh karena itu, penerapan AJAX memungkinkan fitur2 tersebut menjadi lebih efisien dan user friendly. 
+
+## Referensi 
+1. PPT "Web Interactivity" PBP 2025/2026
+2. https://medium.com/django-unleashed/beyond-typing-the-art-of-django-autocomplete-with-ajax-integration-0f048215e1c3
+3. https://www.sekawanmedia.co.id/blog/apa-itu-ajax/
+
+
 
 
 
