@@ -13,6 +13,9 @@ from django.http import HttpResponseRedirect, JsonResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+import requests
+from django.utils.html import strip_tags
+from django.http import JsonResponse
 
 
 @login_required(login_url='/login')
@@ -51,6 +54,15 @@ def show_json(request):
     filter_type = request.GET.get("filter", "all")
     if filter_type == "my" and request.user.is_authenticated:
         product_list = product_list.filter(user=request.user)
+
+    sort_param = request.GET.get('sort')
+    
+    if sort_param == 'harga_asc':
+        product_list = product_list.order_by('price')
+    elif sort_param == 'harga_desc':
+        product_list = product_list.order_by('-price')
+    else:
+        product_list = product_list.order_by('-id')
 
     data = [
         {
@@ -248,4 +260,69 @@ def register_ajax(request):
             'errors': form.errors 
         }, status=400)
 
+def proxy_image(request):
+    image_url = request.GET.get('url')
+    if not image_url:
+        return HttpResponse('No URL provided', status=400)
+    
+    try:
+        # Fetch image from external source
+        response = requests.get(image_url, timeout=10)
+        response.raise_for_status()
+        
+        # Return the image with proper content type
+        return HttpResponse(
+            response.content,
+            content_type=response.headers.get('Content-Type', 'image/jpeg')
+        )
+    except requests.RequestException as e:
+        return HttpResponse(f'Error fetching image: {str(e)}', status=500)
+    
+@csrf_exempt
+def create_product_flutter(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        name = strip_tags(data.get("name", ""))  
+        description = strip_tags(data.get("description", ""))
+        price= strip_tags(data.get("price", 0))
+        category = data.get("category", "")
+        thumbnail = data.get("thumbnail", "")
+        is_featured = data.get("is_featured", False)
+        user = request.user
+        
+        new_product = Product(
+            name=name, 
+            description=description,
+            price=price,
+            category=category,
+            thumbnail=thumbnail,
+            is_featured=is_featured,
+            user=user
+        )
+        new_product.save()
+        
+        return JsonResponse({"status": "success"}, status=200)
+    else:
+        return JsonResponse({"status": "error"}, status=401)
 
+@login_required
+def show_json_by_user(request):
+    products = Product.objects.filter(user=request.user)
+
+    data = []
+    
+    for product in products:
+        item = {
+            'id': str(product.id),
+            'name': product.name,
+            'price': float(product.price) if product.price is not None else None,
+            'description': product.description,
+            'thumbnail': product.thumbnail, 
+            'category': product.category,
+            'is_featured': getattr(product, "is_featured", False),
+            'user_id': product.user_id,
+            'user_username': product.user.username if product.user else None,
+        }
+        data.append(item)
+
+    return JsonResponse(data, safe=False)

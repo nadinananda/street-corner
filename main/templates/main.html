@@ -80,6 +80,12 @@
 
     <!-- Tabs -->
     <div class="flex items-center gap-3 mt-8 mb-6">
+      <button id="sort-asc" type="button" class="px-4 py-2 rounded-md font-semibold border">
+        Rendah ke Tinggi
+      </button>
+      <button id="sort-desc" type="button" class="px-4 py-2 rounded-md font-semibold border">
+        Tinggi ke Rendah
+      </button>
       <button id="tab-all" type="button" class="px-4 py-2 rounded-md font-semibold border"
               style="background:#8BC34A;color:#fff;border-color:#8BC34A;">
         All Product
@@ -141,22 +147,42 @@
   const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
   const esc = (t) => (t ?? '').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
+  const sortAscending = document.getElementById('sort-asc');
+  const sortDescending = document.getElementById('sort-desc');
+
+  let currentSort = '';
+  let currentFilter = 'all';
+
+
+  const setActive = (btn) => {
+    btn.style.backgroundColor = PRIMARY_GREEN;
+    btn.style.color = '#fff';
+    btn.style.borderColor = PRIMARY_GREEN;
+  };
+  const setInactive = (btn) => {
+    btn.style.backgroundColor = '#fff';
+    btn.style.color = '#374151';
+    btn.style.borderColor = '#D1D5DB';
+    btn.style.borderWidth = '1px';
+    btn.style.borderStyle = 'solid';
+  };
+    
   function setTabActive(which) {
-    const setActive = (btn) => {
-      btn.style.backgroundColor = PRIMARY_GREEN;
-      btn.style.color = '#fff';
-      btn.style.borderColor = PRIMARY_GREEN;
-    };
-    const setInactive = (btn) => {
-      btn.style.backgroundColor = '#fff';
-      btn.style.color = '#374151';
-      btn.style.borderColor = '#D1D5DB';
-      btn.style.borderWidth = '1px';
-      btn.style.borderStyle = 'solid';
-    };
     setInactive(tabAllBtn); setInactive(tabMyBtn);
     which === 'all' ? setActive(tabAllBtn) : setActive(tabMyBtn);
   }
+
+  function setSortActive(which) {
+    setInactive(sortAscending);
+    setInactive(sortDescending);
+
+    if (which == 'harga_asc'){
+      setActive(sortAscending);
+    } else if (which == 'harga_desc'){
+      setActive(sortDescending);
+    }
+  }
+
 
   function showState({loading=false, error=false, empty=false, grid=false}) {
     loadingEl.classList.toggle('hidden', !loading);
@@ -230,11 +256,17 @@
     gridEl.innerHTML = items.map(renderCard).join('');
   }
 
-  async function loadProducts(filter='all') {
-    setTabActive(filter);
+  async function loadProducts() {
+    setTabActive(currentFilter);
+    setSortActive(currentSort);
     showState({loading:true});
     try {
-      const res = await fetch(`${PRODUCTS_API_URL}?filter=${filter}`, { credentials: 'same-origin' });
+      let apiUrl = `${PRODUCTS_API_URL}?filter=${currentFilter}`;
+      if (currentSort) {
+      apiUrl += `&sort=${currentSort}`;
+    }
+      const res = await fetch(apiUrl, { credentials: 'same-origin' });
+      
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       renderGrid(data);
@@ -275,16 +307,36 @@
       }
       sessionStorage.removeItem('toast');
     } catch (_) {}
-    loadProducts('all');
+    currentSort = '';
+    currentFilter = 'all';
+    loadProducts();
 
     // Tabs
-    tabAllBtn?.addEventListener('click', () => loadProducts('all'));
-    tabMyBtn?.addEventListener('click',  () => loadProducts('my'));
+    tabAllBtn?.addEventListener('click', () => {
+      currentFilter = 'all'; 
+      loadProducts();        
+    });
+
+    tabMyBtn?.addEventListener('click', () => {
+      currentFilter = 'my'; 
+      loadProducts();     
+    });
+    
+    sortAscending?.addEventListener('click', () => {
+      currentSort = 'harga_asc';
+      setSortActive(currentSort);
+      loadProducts();
+    });
+    sortDescending?.addEventListener('click', () => {
+      currentSort = 'harga_desc';
+      setSortActive(currentSort);
+      loadProducts();
+    });  
+
 
     // Refresh
     document.getElementById('refresh-btn')?.addEventListener('click', () => {
-      const isAllActive = tabAllBtn.style.backgroundColor === PRIMARY_GREEN;
-      loadProducts(isAllActive ? 'all' : 'my');
+      loadProducts();
     });
 
     // Open/close create modal
@@ -339,7 +391,7 @@
         }
 
         const isAllActive = tabAllBtn.style.backgroundColor === PRIMARY_GREEN;
-        loadProducts(isAllActive ? 'all' : 'my');
+        loadProducts();
       } catch (err) {
         console.error(err);
         createErr.textContent = 'Network error. Please try again.';
