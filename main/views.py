@@ -1,20 +1,45 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from main.models import Product
-from main.forms import ProductForm
+from .models import Product
 from django.http import HttpResponse
 from django.core import serializers
+from main.forms import ProductForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+import datetime
+from django.urls import reverse
+from django.http import HttpResponseRedirect, JsonResponse
+import json
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+import requests
+from django.utils.html import strip_tags
+from django.http import JsonResponse
 
 
+@login_required(login_url='/login')
 def show_main(request):
-    product_list = Product.objects.all()
+    filter_type = request.GET.get("filter", "all")
+
+    if filter_type == "all":
+        product_list = Product.objects.all()
+    else:
+        product_list = Product.objects.filter(user=request.user)
 
     context = {
         'nama aplikasi' : 'street corner',
         'npm' : '2406351806',
-        'name': 'Nadin Ananda',
+        'name': request.user.username,
         'class': 'PBP E',
-        'product_list' : product_list,
+        'product_list': product_list,
+        'last_login': request.COOKIES.get('last_login', 'Never'),
+        'form': ProductForm(),
     }
+
+    if request.user.is_authenticated:
+        date = request.user.last_login 
+        context['last_login'] = date
 
     return render(request, "main.html", context)
 
@@ -23,10 +48,38 @@ def show_xml(request):
     xml_data = serializers.serialize("xml", product_list)
     return HttpResponse(xml_data, content_type="application/xml")
 
-def show_json(requset):
-    product_list = Product.objects.all()
-    json_data = serializers.serialize("json", product_list)
-    return HttpResponse(json_data, content_type="application/json")
+def show_json(request):
+    product_list = Product.objects.select_related("user").all()
+
+    filter_type = request.GET.get("filter", "all")
+    if filter_type == "my" and request.user.is_authenticated:
+        product_list = product_list.filter(user=request.user)
+
+    sort_param = request.GET.get('sort')
+    
+    if sort_param == 'harga_asc':
+        product_list = product_list.order_by('price')
+    elif sort_param == 'harga_desc':
+        product_list = product_list.order_by('-price')
+    else:
+        product_list = product_list.order_by('-id')
+
+    data = [
+        {
+            'id' : str(product.id),
+            'name' : product.name,
+            'price' : float(product.price) if product.price is not None else None,
+            'description' : product.description,
+            'thumbnail' : product.thumbnail,
+            'category' : product.category,
+            'is_featured' : getattr(product, "is_featured", False),
+            'user_id'       : product.user_id,
+            'user_username' : product.user.username if product.user_id else None,
+        }
+        for product in product_list
+    ]
+
+    return JsonResponse(data, safe=False)
 
 def show_xml_by_id(request, product_id):
     try: 
@@ -38,29 +91,238 @@ def show_xml_by_id(request, product_id):
 
 def show_json_by_id(request, product_id):
    try: 
-        product_item = Product.objects.get(pk=product_id)
-        json_data = serializers.serialize("json", [product_item])
-        return HttpResponse(json_data, content_type="application/json")
+        product = Product.objects.select_related('user').get(pk=product_id)
+
+        data = {
+            'id': str(product.id),
+            'name': product.name,
+            'price': float(product.price) if product.price is not None else None,
+            'description': product.description,
+            'thumbnail': product.thumbnail,
+            'category': product.category,
+            'is_featured': getattr(product, "is_featured", False),
+            'user_id': product.user_id,
+            'user_username': product.user.username if product.user else None,
+        }
+
+        return JsonResponse(data)
    except Product.DoesNotExist:
-      return HttpResponse(status=404)
+      return JsonResponse({'error': 'Product not found'}, status=404)
 
 def add_product(request):
-    form = ProductForm(request.POST or None)
+    form = ProductForm(request.POST or None, request.FILES or None)
 
-    if form.is_valid() and request.method == "POST":
-        form.save()
+    if form.is_valid() and request.method == 'POST':
+        product_entry = form.save(commit = False)
+        product_entry.user = request.user
+        product_entry.save()
         return redirect('main:show_main')
     
     context = {'form': form}
     return render(request, "create_product.html", context)
 
+@login_required(login_url='/login')
 def show_product(request, id):
+    return render(request, "product_detail.html")
+
+# Tugas 4
+def register(request):
+    form = UserCreationForm()
+
+    if request.method == "POST":
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Your account has been successfully created!')
+            return redirect('main:login')
+    context = {'form':form}
+    return render(request, 'register.html', context)
+
+def login_user(request):
+   if request.method == 'POST':
+      form = AuthenticationForm(data=request.POST)
+
+      if form.is_valid():
+          user = form.get_user()
+          login(request, user)
+          response = HttpResponseRedirect(reverse("main:show_main"))
+          response.set_cookie('last_login', str(datetime.datetime.now()))
+          return response
+
+   else:
+      form = AuthenticationForm(request)
+   context = {'form': form}
+   return render(request, 'login.html', context)
+
+def logout_user(request):
+    logout(request)
+    response = HttpResponseRedirect(reverse('main:login'))
+    response.delete_cookie('last_login')
+    return response
+
+# Tugas 5
+@login_required
+def edit_product(request, id):
     product = get_object_or_404(Product, pk=id)
+    form = ProductForm(instance=product)
 
     context = {
-        'product': product
+        'form': form
     }
 
-    return render(request, "product_detail.html", context)
+    return render(request, "edit_product.html", context)
 
+def delete_product(request, id):
+    product = get_object_or_404(Product, pk=id)
+    product.delete()
+    return HttpResponseRedirect(reverse("main:show_main"))
 
+# Tugas 6
+@login_required
+def create_product_ajax(request):
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES or None)
+        
+        if form.is_valid():
+            product = form.save(commit=False)
+            product.user = request.user
+            product.save()
+            return JsonResponse({'status': 'success', 'message': 'Product created successfully!'})
+        else:
+            return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+    
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+
+@login_required
+def update_product_ajax(request, product_id):
+    product = get_object_or_404(Product, pk=product_id)
+    
+    if product.user != request.user:
+        return JsonResponse({'status': 'error', 'message': 'You are not authorized to edit this product.'}, status=403)
+
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES or None, instance=product)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'status': 'success', 'message': 'Product updated successfully!'})
+        else:
+            return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+
+@login_required
+@require_POST
+def delete_product_ajax(request, product_id):
+    product = get_object_or_404(Product, pk=product_id)
+    if product.user != request.user:
+        return JsonResponse({'status': 'error', 'message': 'Forbidden'}, status=403)
+    product.delete()
+    return JsonResponse({'status': 'success'})
+
+@csrf_exempt
+@require_POST 
+def login_ajax(request):
+    data = json.loads(request.body)
+    username = data.get('username')
+    password = data.get('password')
+
+    user = authenticate(request, username=username, password=password)
+
+    if user is not None:
+        login(request, user)
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Login successful! Redirecting...',
+            'redirect_url': '/' 
+        })
+    else:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Invalid username or password. Please try again.'
+        }, status=400) 
+
+@require_POST
+def register_ajax(request):
+    data = json.loads(request.body)
+    form = UserCreationForm(data)
+
+    if form.is_valid():
+        user = form.save()
+        login(request, user) 
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Registration successful! Redirecting...',
+            'redirect_url': '/'
+        })
+    else:
+        return JsonResponse({
+            'status': 'error',
+            'errors': form.errors 
+        }, status=400)
+
+def proxy_image(request):
+    image_url = request.GET.get('url')
+    if not image_url:
+        return HttpResponse('No URL provided', status=400)
+    
+    try:
+        # Fetch image from external source
+        response = requests.get(image_url, timeout=10)
+        response.raise_for_status()
+        
+        # Return the image with proper content type
+        return HttpResponse(
+            response.content,
+            content_type=response.headers.get('Content-Type', 'image/jpeg')
+        )
+    except requests.RequestException as e:
+        return HttpResponse(f'Error fetching image: {str(e)}', status=500)
+    
+@csrf_exempt
+def create_product_flutter(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        name = strip_tags(data.get("name", ""))  
+        description = strip_tags(data.get("description", ""))
+        price= strip_tags(data.get("price", 0))
+        category = data.get("category", "")
+        thumbnail = data.get("thumbnail", "")
+        is_featured = data.get("is_featured", False)
+        user = request.user
+        
+        new_product = Product(
+            name=name, 
+            description=description,
+            price=price,
+            category=category,
+            thumbnail=thumbnail,
+            is_featured=is_featured,
+            user=user
+        )
+        new_product.save()
+        
+        return JsonResponse({"status": "success"}, status=200)
+    else:
+        return JsonResponse({"status": "error"}, status=401)
+
+@login_required
+def show_json_by_user(request):
+    products = Product.objects.filter(user=request.user)
+
+    data = []
+    
+    for product in products:
+        item = {
+            'id': str(product.id),
+            'name': product.name,
+            'price': float(product.price) if product.price is not None else None,
+            'description': product.description,
+            'thumbnail': product.thumbnail, 
+            'category': product.category,
+            'is_featured': getattr(product, "is_featured", False),
+            'user_id': product.user_id,
+            'user_username': product.user.username if product.user else None,
+        }
+        data.append(item)
+
+    return JsonResponse(data, safe=False)
